@@ -265,7 +265,50 @@ def generate_tickets(start_date: str, end_date: str):
     }
 
 
-def book_ticket(passenger_id: int, ticket_inventory_id: int):
+def get_contacts(passenger_id: int):
+    sql = """
+        SELECT contact_id, contact_name, mobile_number
+        FROM contact
+        WHERE passenger_id = %s
+        ORDER BY contact_name
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, (passenger_id,))
+        return cur.fetchall()
+
+
+def add_contact(passenger_id: int, contact_name: str, mobile_number: str):
+    if not contact_name or not mobile_number:
+        raise ValidationError("Contact name and mobile number are required.")
+    sql = """
+        INSERT INTO contact (contact_name, mobile_number, passenger_id)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (passenger_id, mobile_number) DO NOTHING
+        RETURNING contact_id
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, (contact_name, mobile_number, passenger_id))
+        result = cur.fetchone()
+        if result is None:
+            raise ValidationError("A contact with this mobile number already exists.")
+        conn.commit()
+        return result["contact_id"]
+
+
+def delete_contact(passenger_id: int, contact_id: int):
+    sql = """
+        DELETE FROM contact
+        WHERE contact_id = %s AND passenger_id = %s
+        RETURNING contact_id
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, (contact_id, passenger_id))
+        if cur.fetchone() is None:
+            raise ValidationError("Contact not found.")
+        conn.commit()
+
+
+def book_ticket(passenger_id: int, ticket_inventory_id: int, contact_id: int | None = None):
     select_sql = """
         SELECT
             ti.ticket_inventory_id,
@@ -278,8 +321,8 @@ def book_ticket(passenger_id: int, ticket_inventory_id: int):
         FOR UPDATE
     """
     insert_sql = """
-        INSERT INTO ticket_order (paid_price, passenger_id, ticket_inventory_id)
-        VALUES (%s, %s, %s)
+        INSERT INTO ticket_order (paid_price, passenger_id, ticket_inventory_id, contact_id)
+        VALUES (%s, %s, %s, %s)
         RETURNING order_id
     """
     update_sql = """
@@ -296,7 +339,7 @@ def book_ticket(passenger_id: int, ticket_inventory_id: int):
         if inventory["remain_count"] <= 0:
             raise ValidationError("That cabin is sold out.")
 
-        cur.execute(insert_sql, (inventory["price"], passenger_id, ticket_inventory_id))
+        cur.execute(insert_sql, (inventory["price"], passenger_id, ticket_inventory_id, contact_id))
         order_id = cur.fetchone()["order_id"]
         cur.execute(update_sql, (ticket_inventory_id,))
         conn.commit()
@@ -325,7 +368,9 @@ def get_orders_for_passenger(passenger_id: int):
             src.airport_name AS source_airport_name,
             dst.city_name AS destination_city,
             dst.airport_name AS destination_airport_name,
-            al.airline_name
+            al.airline_name,
+            c.contact_name,
+            c.mobile_number AS contact_mobile
         FROM ticket_order o
         JOIN ticket_inventory ti ON ti.ticket_inventory_id = o.ticket_inventory_id
         JOIN cabin_type ct ON ct.cabin_type_id = ti.cabin_type_id
@@ -334,6 +379,7 @@ def get_orders_for_passenger(passenger_id: int):
         JOIN airline al ON al.airline_id = f.airline_id
         JOIN airport src ON src.airport_id = f.source_airport_id
         JOIN airport dst ON dst.airport_id = f.destination_airport_id
+        LEFT JOIN contact c ON c.contact_id = o.contact_id
         WHERE o.passenger_id = %s
         ORDER BY o.booked_at DESC, o.order_id DESC
     """
