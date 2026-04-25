@@ -43,6 +43,11 @@
                 <input type="time" name="arrival_before" value="{{ filters.arrival_before }}">
             </label>
 
+            <label>
+                <span>Arrival on next day (+1)</span>
+                <input type="checkbox" name="arrival_next_day" value="1" {{ 'checked' if arrival_next_day else '' }}>
+            </label>
+
             <div class="search-actions">
                 <button class="primary-button" type="submit">Run Search</button>
                 <a class="ghost-button" href="{{ url_for('search') }}">Clear</a>

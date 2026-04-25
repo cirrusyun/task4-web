@@ -119,6 +119,7 @@ def create_app() -> Flask:
             "departure_after": request.args.get("departure_after", "").strip(),
             "arrival_before": request.args.get("arrival_before", "").strip(),
         }
+        arrival_next_day = request.args.get("arrival_next_day") == "1"
 
         options = get_search_options()
         results = []
@@ -142,13 +143,14 @@ def create_app() -> Flask:
                 )
             else:
                 try:
-                    results = search_tickets(**filters)
+                    results = search_tickets(**filters, arrival_next_day=arrival_next_day)
                 except ValidationError as exc:
                     flash(str(exc), "error")
 
         return render_template(
             "search.html",
             filters=filters,
+            arrival_next_day=arrival_next_day,
             results=results,
             cities=options["cities"],
             airlines=options["airlines"],

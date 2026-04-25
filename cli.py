@@ -93,13 +93,17 @@ def do_search_flights():
     airline         = _prompt("Airline code/name (Enter to skip)", required=False)
     departure_after = _prompt("Departure after HH:MM (Enter to skip)", required=False)
     arrival_before  = _prompt("Arrival before HH:MM (Enter to skip)", required=False)
+    arrival_next_day = False
+    if arrival_before:
+        nd = _prompt("Arrival on next day (+1)? (y/n)", required=False)
+        arrival_next_day = nd.lower() == "y"
 
     print()
     print("  Searching ...")
     try:
         results = search_tickets(
             departure_city, arrival_city, flight_date,
-            airline, departure_after, arrival_before,
+            airline, departure_after, arrival_before, arrival_next_day,
         )
     except ValidationError as e:
         print(f"  [!] Error: {e}")

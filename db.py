@@ -92,6 +92,7 @@ def search_tickets(
     airline: str = "",
     departure_after: str = "",
     arrival_before: str = "",
+    arrival_next_day: bool = False,
 ):
     _parse_date(flight_date)
     departure_after = departure_after or None
@@ -141,7 +142,7 @@ def search_tickets(
                 OR LOWER(al.airline_name) = LOWER(%s)
               )
           AND (%s IS NULL OR f.departure_time >= %s)
-          AND (%s IS NULL OR (f.arrival_day_offset = 0 AND f.arrival_time <= %s))
+          AND (%s IS NULL OR (f.arrival_day_offset = %s AND f.arrival_time <= %s))
         GROUP BY
             fi.flight_instance_id,
             fi.flight_date,
@@ -176,6 +177,7 @@ def search_tickets(
                 departure_after,
                 departure_after,
                 arrival_before,
+                1 if arrival_next_day else 0,
                 arrival_before,
             ),
         )
