@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ app_name }}{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-glow page-glow-left"></div>
+    <div class="page-glow page-glow-right"></div>
+
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('dashboard') }}">
+            <span class="brand-mark">SL</span>
+            <span>
+                <strong>{{ app_name }}</strong>
+                <small>Flight search, booking, and order control</small>
+            </span>
+        </a>
+
+        <nav class="nav-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('search') }}">Search Tickets</a>
+            {% if g.user %}
+                <a href="{{ url_for('orders') }}">My Orders</a>
+            {% endif %}
+        </nav>
+
+        <div class="session-panel">
+            {% if g.user %}
+                <div class="session-chip">
+                    <span>{{ g.user.passenger_name }}</span>
+                    <small>{{ g.user.mobile_number }}</small>
+                </div>
+                <form method="post" action="{{ url_for('logout') }}">
+                    <button class="ghost-button" type="submit">Sign Out</button>
+                </form>
+            {% else %}
+                <a class="ghost-button" href="{{ url_for('login') }}">Passenger Sign In</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="layout">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="flash-stack">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const forms = document.querySelectorAll("form[data-confirm], form[data-confirm-template]");
+
+            for (const form of forms) {
+                form.addEventListener("submit", (event) => {
+                    const message = buildConfirmMessage(form);
+                    if (message && !window.confirm(message)) {
+                        event.preventDefault();
+                    }
+                });
+            }
+        });
+
+        function buildConfirmMessage(form) {
+            if (form.dataset.confirmTemplate) {
+                return form.dataset.confirmTemplate.replace(/\{([^}]+)\}/g, (_, fieldName) => {
+                    const field = form.elements.namedItem(fieldName);
+                    const value = field && "value" in field ? String(field.value).trim() : "";
+                    return value || `[${fieldName}]`;
+                });
+            }
+
+            return form.dataset.confirm || "";
+        }
+    </script>
+</body>
+</html>

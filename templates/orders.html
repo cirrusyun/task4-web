@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %} · My Orders{% endblock %}
+
+{% block content %}
+<section class="orders-shell">
+    <div class="results-head">
+        <div>
+            <p class="eyebrow">Requirement 4</p>
+            <h1>My Ticket Orders</h1>
+        </div>
+        <a class="ghost-button" href="{{ url_for('search') }}">Book Another Flight</a>
+    </div>
+
+    {% if orders %}
+        <section class="order-grid">
+            {% for order in orders %}
+                <article class="order-card">
+                    <div class="order-topline">
+                        <strong>Order #{{ order.order_id }}</strong>
+                        <span class="status status-{{ order.order_status }}">{{ order.order_status }}</span>
+                    </div>
+
+                    <h2>{{ order.source_city }} → {{ order.destination_city }}</h2>
+                    <p>
+                        {{ order.flight_number }} · {{ order.airline_name }} · {{ order.cabin_name }}
+                    </p>
+
+                    <dl class="order-meta">
+                        <div><dt>Date</dt><dd>{{ order.flight_date|date_label }}</dd></div>
+                        <div><dt>Departure</dt><dd>{{ order.departure_time|clock }}</dd></div>
+                        <div><dt>Arrival</dt><dd>{{ order.arrival_time|clock }}{% if order.arrival_day_offset %} +{{ order.arrival_day_offset }} day{% endif %}</dd></div>
+                        <div><dt>Price Paid</dt><dd>{{ order.paid_price|money }}</dd></div>
+                        <div><dt>Booked At</dt><dd>{{ order.booked_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd></div>
+                        <div><dt>Airports</dt><dd>{{ order.source_airport_name }} → {{ order.destination_airport_name }}</dd></div>
+                    </dl>
+
+                    <div class="order-actions">
+                        {% if order.order_status == 'booked' %}
+                            <form
+                                method="post"
+                                action="{{ url_for('cancel', order_id=order.order_id) }}"
+                                data-confirm="Cancel this order? The local order status will change to cancelled and one seat will be restored."
+                            >
+                                <button class="primary-button" type="submit">Cancel Order</button>
+                            </form>
+                        {% else %}
+                            <form
+                                method="post"
+                                action="{{ url_for('delete_order', order_id=order.order_id) }}"
+                                data-confirm="Delete this cancelled order permanently from the local database?"
+                            >
+                                <button class="ghost-button" type="submit">Delete Cancelled Order</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% else %}
+        <article class="card empty-state">
+            <h2>No orders yet</h2>
+            <p>Search a route, choose a cabin, and create your first booking.</p>
+        </article>
+    {% endif %}
+</section>
+{% endblock %}

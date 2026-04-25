@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %} · Passenger Login{% endblock %}
+
+{% block content %}
+<section class="single-column">
+    <article class="card login-card">
+        <p class="eyebrow">Passenger Authentication</p>
+        <h1>Sign in with existing passenger data</h1>
+        <p>
+            This demo uses the imported passenger master data as the identity source.
+            Enter the passenger name and the unique mobile number from <code>passenger.csv</code>.
+        </p>
+
+        <form class="stack-form" method="post" action="{{ url_for('login') }}">
+            <input type="hidden" name="next" value="{{ next_url }}">
+
+            <label>
+                <span>Passenger name</span>
+                <input type="text" name="passenger_name" placeholder="Kong Yibo" required>
+            </label>
+
+            <label>
+                <span>Mobile number</span>
+                <input type="text" name="mobile_number" placeholder="15038403217" required>
+            </label>
+
+            <button class="primary-button" type="submit">Sign In</button>
+        </form>
+    </article>
+</section>
+{% endblock %}

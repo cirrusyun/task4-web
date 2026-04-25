@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %} · Search Tickets{% endblock %}
+
+{% block content %}
+<section class="search-shell">
+    <article class="card search-panel">
+        <p class="eyebrow">Requirement 2</p>
+        <h1>Search Tickets</h1>
+        <p>
+            Required filters are departure city, arrival city, and date.
+            Airline, departure-after, and arrival-before are optional.
+        </p>
+
+        <form class="search-form" method="get" action="{{ url_for('search') }}">
+            <label>
+                <span>Departure city</span>
+                <input list="city-options" name="departure_city" value="{{ filters.departure_city }}" required>
+            </label>
+
+            <label>
+                <span>Arrival city</span>
+                <input list="city-options" name="arrival_city" value="{{ filters.arrival_city }}" required>
+            </label>
+
+            <label>
+                <span>Date</span>
+                <input type="date" name="flight_date" value="{{ filters.flight_date }}" required>
+            </label>
+
+            <label>
+                <span>Airline</span>
+                <input list="airline-options" name="airline" value="{{ filters.airline }}" placeholder="CA or Air China">
+            </label>
+
+            <label>
+                <span>Departure after</span>
+                <input type="time" name="departure_after" value="{{ filters.departure_after }}">
+            </label>
+
+            <label>
+                <span>Arrival before</span>
+                <input type="time" name="arrival_before" value="{{ filters.arrival_before }}">
+            </label>
+
+            <div class="search-actions">
+                <button class="primary-button" type="submit">Run Search</button>
+                <a class="ghost-button" href="{{ url_for('search') }}">Clear</a>
+            </div>
+        </form>
+    </article>
+
+    <datalist id="city-options">
+        {% for city in cities %}
+            <option value="{{ city }}"></option>
+        {% endfor %}
+    </datalist>
+
+    <datalist id="airline-options">
+        {% for airline in airlines %}
+            <option value="{{ airline.airline_code }}">{{ airline.airline_name }}</option>
+            <option value="{{ airline.airline_name }}"></option>
+        {% endfor %}
+    </datalist>
+
+    {% if search_performed %}
+        <section class="results-head">
+            <div>
+                <p class="eyebrow">Search Result</p>
+                <h2>{{ results|length }} ticket option(s)</h2>
+            </div>
+            {% if not g.user %}
+                <a class="ghost-button" href="{{ url_for('login', next=request.full_path.rstrip('?')) }}">Sign In to Book</a>
+            {% endif %}
+        </section>
+
+        {% if results %}
+            <section class="ticket-grid">
+                {% for ticket in results %}
+                    <article class="ticket-card">
+                        <div class="ticket-route">
+                            <div>
+                                <p class="route-code">{{ ticket.source_iata_code }}</p>
+                                <h3>{{ ticket.source_city }}</h3>
+                                <p>{{ ticket.source_airport_name }}</p>
+                            </div>
+
+                            <div class="route-meta">
+                                <span>{{ ticket.departure_time|clock }}</span>
+                                <span class="route-line"></span>
+                                <span>{{ ticket.arrival_time|clock }}</span>
+                                {% if ticket.arrival_day_offset %}
+                                    <small>+{{ ticket.arrival_day_offset }} day</small>
+                                {% endif %}
+                            </div>
+
+                            <div>
+                                <p class="route-code">{{ ticket.destination_iata_code }}</p>
+                                <h3>{{ ticket.destination_city }}</h3>
+                                <p>{{ ticket.destination_airport_name }}</p>
+                            </div>
+                        </div>
+
+                        <div class="ticket-details">
+                            <span><strong>{{ ticket.flight_number }}</strong> · {{ ticket.airline_name }}</span>
+                            <span>{{ ticket.flight_date|date_label }}</span>
+                        </div>
+
+                        <div class="fare-grid">
+                            <div class="fare-box">
+                                <p class="fare-title">Economy</p>
+                                <strong>{{ ticket.economy_price|money }}</strong>
+                                <span>{{ ticket.economy_remain }} seats left</span>
+
+                                {% if g.user %}
+                                    <form
+                                        method="post"
+                                        action="{{ url_for('book') }}"
+                                        data-confirm="Confirm economy booking? This will create a ticket order and reduce local seat inventory by one."
+                                    >
+                                        <input type="hidden" name="ticket_inventory_id" value="{{ ticket.economy_inventory_id }}">
+                                        <input type="hidden" name="return_to" value="{{ request.full_path.rstrip('?') }}">
+                                        <button class="primary-button" type="submit" {% if ticket.economy_remain <= 0 %}disabled{% endif %}>
+                                            Book Economy
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <a class="ghost-button" href="{{ url_for('login', next=request.full_path.rstrip('?')) }}">Sign In</a>
+                                {% endif %}
+                            </div>
+
+                            <div class="fare-box">
+                                <p class="fare-title">Business</p>
+                                <strong>{{ ticket.business_price|money }}</strong>
+                                <span>{{ ticket.business_remain }} seats left</span>
+
+                                {% if g.user %}
+                                    <form
+                                        method="post"
+                                        action="{{ url_for('book') }}"
+                                        data-confirm="Confirm business booking? This will create a ticket order and reduce local seat inventory by one."
+                                    >
+                                        <input type="hidden" name="ticket_inventory_id" value="{{ ticket.business_inventory_id }}">
+                                        <input type="hidden" name="return_to" value="{{ request.full_path.rstrip('?') }}">
+                                        <button class="ghost-button" type="submit" {% if ticket.business_remain <= 0 %}disabled{% endif %}>
+                                            Book Business
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <a class="ghost-button" href="{{ url_for('login', next=request.full_path.rstrip('?')) }}">Sign In</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </section>
+        {% else %}
+            <article class="card empty-state">
+                <h2>No matching tickets</h2>
+                <p>Try a different city pair, a different date, or looser optional time filters.</p>
+            </article>
+        {% endif %}
+    {% endif %}
+</section>
+{% endblock %}

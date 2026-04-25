@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %} · Dashboard{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <div>
+        <p class="eyebrow">CS307 Project 1 · Task 4</p>
+        <h1>Operate the airline database through a single web console.</h1>
+        <p class="lede">
+            Generate ticket inventory for a date range, search routes with optional time filters,
+            complete bookings, and manage passenger orders without touching SQL by hand.
+        </p>
+        <div class="hero-actions">
+            <a class="primary-button" href="{{ url_for('search') }}">Search Tickets</a>
+            {% if g.user %}
+                <a class="ghost-button" href="{{ url_for('orders') }}">Open My Orders</a>
+            {% else %}
+                <a class="ghost-button" href="{{ url_for('login') }}">Sign In to Book</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="hero-note card">
+        <h2>Current Database Snapshot</h2>
+        <ul class="stat-list">
+            <li><span>Flight templates</span><strong>{{ stats.flights }}</strong></li>
+            <li><span>Flight instances</span><strong>{{ stats.flight_instances }}</strong></li>
+            <li><span>Inventory rows</span><strong>{{ stats.inventory_rows }}</strong></li>
+            <li><span>Passengers</span><strong>{{ stats.passengers }}</strong></li>
+            <li><span>Active orders</span><strong>{{ stats.active_orders }}</strong></li>
+            <li><span>Available dates</span><strong>{{ stats.first_date|date_label }} → {{ stats.last_date|date_label }}</strong></li>
+        </ul>
+    </div>
+</section>
+
+<section class="grid two-up">
+    <article class="card">
+        <p class="eyebrow">Requirement 1</p>
+        <h2>Generate Tickets by Date Range</h2>
+        <p>
+            This action derives fresh <code>flight_instance</code> rows from the existing
+            <code>flight</code> templates, then seeds both cabin inventories using the latest
+            known fare template for each route.
+        </p>
+
+        <form
+            class="stack-form"
+            method="post"
+            action="{{ url_for('generate') }}"
+            data-confirm-template="Generate tickets from {start_date} to {end_date}? This will insert new flight instances and inventory rows into the local database."
+        >
+            <label>
+                <span>Start date</span>
+                <input type="date" name="start_date" required>
+            </label>
+            <label>
+                <span>End date</span>
+                <input type="date" name="end_date" required>
+            </label>
+            <button class="primary-button" type="submit">Generate Tickets</button>
+        </form>
+    </article>
+
+    <article class="card accent-card">
+        <p class="eyebrow">Workflow</p>
+        <h2>Passenger-Facing Flow</h2>
+        <ol class="flow-list">
+            <li>Search tickets by departure city, arrival city, and date.</li>
+            <li>Refine results with airline, departure-after, or arrival-before filters.</li>
+            <li>Sign in with passenger name and mobile number.</li>
+            <li>Book economy or business cabin and create a live order record.</li>
+            <li>Cancel booked orders or delete cancelled ones from the order center.</li>
+        </ol>
+    </article>
+</section>
+{% endblock %}
