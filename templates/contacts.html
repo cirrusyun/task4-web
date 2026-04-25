@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %} · My Contacts{% endblock %}
+
+{% block content %}
+<section class="orders-shell">
+    <div class="results-head">
+        <div>
+            <p class="eyebrow">Contact Management</p>
+            <h1>My Contacts</h1>
+        </div>
+        <a class="ghost-button" href="{{ url_for('search') }}">Search Flights</a>
+    </div>
+
+    <article class="card" style="margin-bottom:1.5rem">
+        <h2 style="margin-bottom:1rem">Add Contact</h2>
+        <form method="post" action="{{ url_for('contacts_add') }}" class="search-form">
+            <label>
+                <span>Name</span>
+                <input type="text" name="contact_name" required placeholder="Full name">
+            </label>
+            <label>
+                <span>Mobile number</span>
+                <input type="text" name="mobile_number" required placeholder="e.g. 13800000001">
+            </label>
+            <div class="search-actions">
+                <button class="primary-button" type="submit">Add Contact</button>
+            </div>
+        </form>
+    </article>
+
+    {% if contacts %}
+        <section class="order-grid">
+            {% for contact in contacts %}
+                <article class="order-card">
+                    <div class="order-topline">
+                        <strong>{{ contact.contact_name }}</strong>
+                    </div>
+                    <p>{{ contact.mobile_number }}</p>
+                    <div class="order-actions">
+                        <form
+                            method="post"
+                            action="{{ url_for('contacts_delete', contact_id=contact.contact_id) }}"
+                            data-confirm="Delete contact {{ contact.contact_name }}?"
+                        >
+                            <button class="ghost-button" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% else %}
+        <article class="card empty-state">
+            <h2>No contacts yet</h2>
+            <p>Add a contact above to book tickets on their behalf.</p>
+        </article>
+    {% endif %}
+</section>
+{% endblock %}

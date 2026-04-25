@@ -32,6 +32,7 @@
                         <div><dt>Arrival</dt><dd>{{ order.arrival_time|clock }}{% if order.arrival_day_offset %} +{{ order.arrival_day_offset }} day{% endif %}</dd></div>
                         <div><dt>Price Paid</dt><dd>{{ order.paid_price|money }}</dd></div>
                         <div><dt>Booked At</dt><dd>{{ order.booked_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd></div>
+                        <div><dt>Booked For</dt><dd>{{ order.contact_name if order.contact_name else 'Self' }}</dd></div>
                         <div><dt>Airports</dt><dd>{{ order.source_airport_name }} → {{ order.destination_airport_name }}</dd></div>
                     </dl>
 

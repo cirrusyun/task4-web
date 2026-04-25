@@ -19,11 +19,14 @@ from flask import (
 
 from db import (
     ValidationError,
+    add_contact,
     authenticate_passenger,
     book_ticket,
     cancel_order,
     delete_cancelled_order,
+    delete_contact,
     generate_tickets,
+    get_contacts,
     get_dashboard_stats,
     get_orders_for_passenger,
     get_search_options,
@@ -120,6 +123,7 @@ def create_app() -> Flask:
             "arrival_before": request.args.get("arrival_before", "").strip(),
         }
         arrival_next_day = request.args.get("arrival_next_day") == "1"
+        contacts = get_contacts(g.user["passenger_id"]) if g.user else []
 
         options = get_search_options()
         results = []
@@ -155,6 +159,7 @@ def create_app() -> Flask:
             cities=options["cities"],
             airlines=options["airlines"],
             search_performed=search_performed,
+            contacts=contacts,
         )
 
     @app.post("/generate")
@@ -182,6 +187,7 @@ def create_app() -> Flask:
     @login_required
     def book():
         ticket_inventory_id = request.form.get("ticket_inventory_id", type=int)
+        contact_id = request.form.get("contact_id", type=int) or None
         return_to = request.form.get("return_to") or url_for("search")
 
         if not ticket_inventory_id:
@@ -189,14 +195,21 @@ def create_app() -> Flask:
             return redirect(_safe_redirect_target(return_to, "search"))
 
         try:
-            booking = book_ticket(g.user["passenger_id"], ticket_inventory_id)
+            booking = book_ticket(g.user["passenger_id"], ticket_inventory_id, contact_id)
         except ValidationError as exc:
             flash(str(exc), "error")
             return redirect(_safe_redirect_target(return_to, "search"))
 
+        for_label = ""
+        if contact_id:
+            contacts = get_contacts(g.user["passenger_id"])
+            match = next((c for c in contacts if c["contact_id"] == contact_id), None)
+            if match:
+                for_label = f" for {match['contact_name']}"
+
         flash(
             (
-                f"Order #{booking['order_id']} confirmed: "
+                f"Order #{booking['order_id']} confirmed{for_label}: "
                 f"{booking['cabin_name']} cabin at {money_filter(booking['paid_price'])}."
             ),
             "success",
@@ -230,6 +243,34 @@ def create_app() -> Flask:
         else:
             flash(f"Cancelled order #{order_id} was permanently deleted.", "info")
         return redirect(url_for("orders"))
+
+    @app.route("/contacts")
+    @login_required
+    def contacts():
+        contacts_data = get_contacts(g.user["passenger_id"])
+        return render_template("contacts.html", contacts=contacts_data)
+
+    @app.post("/contacts/add")
+    @login_required
+    def contacts_add():
+        contact_name = request.form.get("contact_name", "").strip()
+        mobile_number = request.form.get("mobile_number", "").strip()
+        try:
+            add_contact(g.user["passenger_id"], contact_name, mobile_number)
+            flash(f"Contact '{contact_name}' added.", "success")
+        except ValidationError as exc:
+            flash(str(exc), "error")
+        return redirect(url_for("contacts"))
+
+    @app.post("/contacts/<int:contact_id>/delete")
+    @login_required
+    def contacts_delete(contact_id: int):
+        try:
+            delete_contact(g.user["passenger_id"], contact_id)
+            flash("Contact deleted.", "info")
+        except ValidationError as exc:
+            flash(str(exc), "error")
+        return redirect(url_for("contacts"))
 
     return app
 

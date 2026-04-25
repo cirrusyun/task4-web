@@ -125,6 +125,14 @@
                                     >
                                         <input type="hidden" name="ticket_inventory_id" value="{{ ticket.economy_inventory_id }}">
                                         <input type="hidden" name="return_to" value="{{ request.full_path.rstrip('?') }}">
+                                        {% if contacts %}
+                                            <select name="contact_id" style="width:100%;margin-bottom:0.5rem">
+                                                <option value="">For myself</option>
+                                                {% for c in contacts %}
+                                                    <option value="{{ c.contact_id }}">For {{ c.contact_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        {% endif %}
                                         <button class="primary-button" type="submit" {% if ticket.economy_remain <= 0 %}disabled{% endif %}>
                                             Book Economy
                                         </button>
@@ -147,6 +155,14 @@
                                     >
                                         <input type="hidden" name="ticket_inventory_id" value="{{ ticket.business_inventory_id }}">
                                         <input type="hidden" name="return_to" value="{{ request.full_path.rstrip('?') }}">
+                                        {% if contacts %}
+                                            <select name="contact_id" style="width:100%;margin-bottom:0.5rem">
+                                                <option value="">For myself</option>
+                                                {% for c in contacts %}
+                                                    <option value="{{ c.contact_id }}">For {{ c.contact_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        {% endif %}
                                         <button class="ghost-button" type="submit" {% if ticket.business_remain <= 0 %}disabled{% endif %}>
                                             Book Business
                                         </button>
